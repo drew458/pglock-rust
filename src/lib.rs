@@ -47,8 +47,16 @@ impl DistributedLock {
     }
 }
 
-pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<bool, sqlx::Error> {
-    let ret: (bool, ) = sqlx::query_as("SELECT pg_catalog.pg_advisory_lock($1)")
+pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::Error> {
+    sqlx::query("SELECT pg_catalog.pg_advisory_lock($1)")
+        .bind(lock.key())
+        .execute(pool).await?;
+
+    Ok(())
+}
+
+pub async fn try_lock(pool: &PgPool, lock: &DistributedLock) -> Result<bool, sqlx::Error> {
+    let ret: (bool, ) = sqlx::query_as("SELECT pg_catalog.pg_try_advisory_lock($1)")
         .bind(lock.key())
         .fetch_one(pool).await?;
 
