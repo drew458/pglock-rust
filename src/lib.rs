@@ -1,17 +1,19 @@
-struct DistributedLock {
-    key: i128,
+use sqlx::PgPool;
+
+pub struct DistributedLock {
+    key: i64,
     lock_type: LockType,
     is_shared: bool
 }
 
-enum LockType {
+pub enum LockType {
     SessionLock,
     TransactionLock
 }
 
 impl DistributedLock {
 
-    pub fn new(key: i128, lock_type: LockType, is_shared: bool) -> DistributedLock {
+    pub fn new(key: i64, lock_type: LockType, is_shared: bool) -> DistributedLock {
 
         DistributedLock {
             key,
@@ -20,7 +22,7 @@ impl DistributedLock {
         }
     }
 
-    pub fn key(&self) -> &i128 {
+    pub fn key(&self) -> &i64 {
         &self.key
     }
 
@@ -32,7 +34,7 @@ impl DistributedLock {
         &self.is_shared
     }
 
-    pub fn set_key(&mut self, key: i128) {
+    pub fn set_key(&mut self, key: i64) {
         self.key = key
     }
 
@@ -43,4 +45,12 @@ impl DistributedLock {
     pub fn set_is_shared(&mut self, is_shared: bool) {
         self.is_shared = is_shared
     }
+}
+
+pub async fn acquire(pool: &PgPool, lock: &DistributedLock) -> Result<bool, sqlx::Error> {
+    let ret: (bool, ) = sqlx::query_as("SELECT pg_catalog.pg_acquire_lock($1)")
+        .bind(lock.key())
+        .fetch_one(pool).await?;
+
+    Ok(ret.0)
 }
