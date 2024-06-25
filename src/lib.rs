@@ -48,7 +48,8 @@ impl DistributedLock {
 }
 
 pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::Error> {
-    sqlx::query("SELECT pg_catalog.pg_advisory_lock($1)")
+
+    sqlx::query(&build_query(lock.is_shared(), &true))
         .bind(lock.key())
         .execute(pool).await?;
 
@@ -56,7 +57,7 @@ pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::Err
 }
 
 pub async fn try_lock(pool: &PgPool, lock: &DistributedLock) -> Result<bool, sqlx::Error> {
-    let ret: (bool, ) = sqlx::query_as("SELECT pg_catalog.pg_try_advisory_lock($1)")
+    let ret: (bool, ) = sqlx::query_as(&build_query(lock.is_shared(), &false))
         .bind(lock.key())
         .fetch_one(pool).await?;
 
@@ -69,4 +70,23 @@ pub async fn unlock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::E
         .execute(pool).await?;
 
     Ok(())
+}
+
+fn build_query(is_shared: &bool, is_wait: &bool) -> String {
+
+    let mut qry: String = "SELECT pg_catalog.pg_".into();
+
+    if !is_wait {
+        qry.push_str("try_");
+    }
+
+    qry.push_str("advisory_lock");
+
+    if *is_shared {
+        qry.push_str("_shared");
+    }
+
+    qry.push_str("($1)");
+
+    qry
 }
