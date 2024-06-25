@@ -54,3 +54,11 @@ pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<bool, sqlx::E
 
     Ok(ret.0)
 }
+
+pub async fn unlock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::Error> {
+    sqlx::query("SELECT pg_catalog.pg_advisory_unlock($1)")
+        .bind(lock.key())
+        .execute(pool).await?;
+
+    Ok(())
+}
