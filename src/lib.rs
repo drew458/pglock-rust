@@ -1,6 +1,6 @@
 use sqlx::PgPool;
 
-struct DistributedLock<'a> {
+pub struct DistributedLock<'a> {
     pool: &'a PgPool,
     key: i64,
     lock_type: LockType,
