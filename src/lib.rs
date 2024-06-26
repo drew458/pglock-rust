@@ -1,11 +1,13 @@
 use sqlx::PgPool;
 
+#[derive(Debug, Clone, Copy)]
 pub struct DistributedLock {
     key: i64,
     lock_type: LockType,
     is_shared: bool
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum LockType {
     SessionLock,
     TransactionLock
@@ -13,7 +15,16 @@ pub enum LockType {
 
 impl DistributedLock {
 
-    pub fn new(key: i64, lock_type: LockType, is_shared: bool) -> DistributedLock {
+    pub fn new(key: i64) -> DistributedLock {
+
+        DistributedLock {
+            key,
+            lock_type: LockType::SessionLock,
+            is_shared: false
+        }
+    }
+
+    pub fn new_with_attributes(key: i64, lock_type: LockType, is_shared: bool) -> DistributedLock {
 
         DistributedLock {
             key,
@@ -22,16 +33,16 @@ impl DistributedLock {
         }
     }
 
-    pub fn key(&self) -> &i64 {
-        &self.key
+    pub fn key(&self) -> i64 {
+        self.key
     }
 
-    pub fn lock_type(&self) -> &LockType {
-        &self.lock_type
+    pub fn lock_type(&self) -> LockType {
+        self.lock_type
     }
 
-    pub fn is_shared(&self) -> &bool {
-        &self.is_shared
+    pub fn is_shared(&self) -> bool {
+        self.is_shared
     }
 
     pub fn set_key(&mut self, key: i64) {
@@ -49,7 +60,7 @@ impl DistributedLock {
 
 pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::Error> {
 
-    sqlx::query(&build_query(*lock.is_shared(), true))
+    sqlx::query(&build_query(lock.is_shared(), true))
         .bind(lock.key())
         .execute(pool).await?;
 
@@ -57,7 +68,7 @@ pub async fn lock(pool: &PgPool, lock: &DistributedLock) -> Result<(), sqlx::Err
 }
 
 pub async fn try_lock(pool: &PgPool, lock: &DistributedLock) -> Result<bool, sqlx::Error> {
-    let ret: (bool, ) = sqlx::query_as(&build_query(*lock.is_shared(), false))
+    let ret: (bool, ) = sqlx::query_as(&build_query(lock.is_shared(), false))
         .bind(lock.key())
         .fetch_one(pool).await?;
 
