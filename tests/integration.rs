@@ -41,4 +41,22 @@ mod tests {
         lock.try_lock().await.unwrap();
         lock.unlock().await.unwrap();
     }
+
+    #[sqlx::test]
+    fn test_transaction_lock() {
+        let pool = setup_test_db().await.unwrap();
+
+        let lock = DistributedLock::new_with_attributes(&pool, 1, pglock_rust::LockType::TransactionLock, false);
+        let locked = lock.try_lock().await.unwrap();
+        assert_eq!(locked, true)
+    }
+
+    #[sqlx::test]
+    fn test_transaction_shared_lock() {
+        let pool = setup_test_db().await.unwrap();
+
+        let lock = DistributedLock::new_with_attributes(&pool, 1, pglock_rust::LockType::TransactionLock, true);
+        let locked = lock.try_lock().await.unwrap();
+        assert_eq!(locked, true)
+    }
 }
