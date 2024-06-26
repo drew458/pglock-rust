@@ -21,4 +21,24 @@ mod tests {
         let locked = lock.try_lock().await.unwrap();
         assert_eq!(locked, true)
     }
+
+    #[sqlx::test]
+    fn test_shared_lock() {
+        let pool = setup_test_db().await.unwrap();
+
+        let mut lock = DistributedLock::new(&pool, 1);
+        lock.set_is_shared(true);
+        let locked = lock.try_lock().await.unwrap();
+        assert_eq!(locked, true)
+    }
+
+    #[sqlx::test]
+    fn test_unlock() {
+        let pool = setup_test_db().await.unwrap();
+
+        let mut lock = DistributedLock::new(&pool, 1);
+        lock.set_is_shared(true);
+        lock.try_lock().await.unwrap();
+        lock.unlock().await.unwrap();
+    }
 }
