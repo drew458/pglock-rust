@@ -63,6 +63,7 @@ impl <'a> DistributedLock<'a> {
     }
 
     pub async fn lock(&self) -> Result<(), sqlx::Error> {
+        
         sqlx::query(&build_query(self.is_shared(), true))
             .bind(self.key())
             .execute(self.pool).await?;
@@ -71,6 +72,7 @@ impl <'a> DistributedLock<'a> {
     }
 
     pub async fn try_lock(&self) -> Result<bool, sqlx::Error> {
+
         let locked: (bool, ) = sqlx::query_as(&build_query(self.is_shared(), false))
             .bind(self.key())
             .fetch_one(self.pool).await?;
@@ -79,6 +81,7 @@ impl <'a> DistributedLock<'a> {
     }
 
     pub async fn unlock(&self) -> Result<(), sqlx::Error> {
+
         sqlx::query("SELECT pg_catalog.pg_advisory_unlock($1)")
             .bind(self.key())
             .execute(self.pool).await?;
@@ -90,17 +93,30 @@ impl <'a> DistributedLock<'a> {
 impl <'a> DistributedLockInfo<'a> {
 
     pub async fn unlock_all(&self) {
+
         let _ = sqlx::query("SELECT pg_catalog.pg_advisory_unlock_all()")
             .execute(self.pool).await;
     }
 
     pub async fn is_locked(&self, key: i64) -> Result<bool, sqlx::Error> {
+
         let locked: (bool, ) = sqlx::query_as("SELECT EXISTS ( 
                 SELECT objid FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND CAST(objid AS bigint) = $1 )")
             .bind(key)
             .fetch_one(self.pool).await?;
 
             Ok(locked.0)
+    }
+
+    pub async fn get_all_locks(&self) -> Result<Vec<i64>, sqlx::Error> {
+
+        let locks: Vec<(i64,)> = sqlx::query_as("SELECT CAST(objid AS bigint) FROM pg_catalog.pg_locks WHERE locktype = 'advisory'")
+            .fetch_all(self.pool).await?;
+
+        // Convert Vec<(i64,)> to Vec<i64>
+        let vec_of_i64: Vec<i64> = locks.into_iter().map(|(x,)| x).collect();
+
+        Ok(vec_of_i64)
     }
 }
 
