@@ -89,6 +89,11 @@ impl <'a> DistributedLock<'a> {
 
 impl <'a> DistributedLockInfo<'a> {
 
+    pub async fn unlock_all(&self) {
+        let _ = sqlx::query("SELECT pg_catalog.pg_advisory_unlock_all()")
+            .execute(self.pool).await;
+    }
+
     pub async fn is_locked(&self, key: i64) -> Result<bool, sqlx::Error> {
         let locked: (bool, ) = sqlx::query_as("SELECT EXISTS ( 
                 SELECT objid FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND CAST(objid AS bigint) = $1 )")
