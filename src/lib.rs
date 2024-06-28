@@ -12,6 +12,10 @@ pub enum LockType {
     TransactionLock
 }
 
+pub struct DistributedLockInfo<'a> {
+    pool: &'a PgPool
+}
+
 impl <'a> DistributedLock<'a> {
 
     pub fn new(pool: &PgPool, key: i64) -> DistributedLock {
@@ -60,18 +64,18 @@ impl <'a> DistributedLock<'a> {
 
     pub async fn lock(&self) -> Result<(), sqlx::Error> {
         sqlx::query(&build_query(self.is_shared(), true))
-        .bind(self.key())
-        .execute(self.pool).await?;
+            .bind(self.key())
+            .execute(self.pool).await?;
 
         Ok(())
     }
 
     pub async fn try_lock(&self) -> Result<bool, sqlx::Error> {
-        let ret: (bool, ) = sqlx::query_as(&build_query(self.is_shared(), false))
+        let locked: (bool, ) = sqlx::query_as(&build_query(self.is_shared(), false))
             .bind(self.key())
             .fetch_one(self.pool).await?;
     
-        Ok(ret.0)
+        Ok(locked.0)
     }
 
     pub async fn unlock(&self) -> Result<(), sqlx::Error> {
@@ -80,6 +84,18 @@ impl <'a> DistributedLock<'a> {
             .execute(self.pool).await?;
     
         Ok(())
+    }
+}
+
+impl <'a> DistributedLockInfo<'a> {
+
+    pub async fn is_locked(&self, key: i64) -> Result<bool, sqlx::Error> {
+        let locked: (bool, ) = sqlx::query_as("SELECT EXISTS ( 
+                SELECT objid FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND CAST(objid AS bigint) = $1 )")
+            .bind(key)
+            .fetch_one(self.pool).await?;
+
+            Ok(locked.0)
     }
 }
 
