@@ -42,13 +42,13 @@ use sqlx::PgPool;
 
 fn main() {
 
-  let lock_key: i64 = 1;
+  const LOCK_KEY: i64 = 1;
   let pool = PgPool::connect("postgresql://postgres@localhost:5432/postgres").await.expect("Failed to create pool");
-  let lock = DistributedLock::new(&pool, lock_key);
+  let lock = DistributedLock::new(&pool, LOCK_KEY);
 
   let locked = lock.try_lock().await.unwrap();
   if locked {
-    println!("I have the lock wih key {lock_key} now!");
+    println!("I have the lock wih key {LOCK_KEY} now!");
   }
   lock.unlock().await.unwrap();
 }
@@ -61,12 +61,12 @@ use sqlx::PgPool;
 
 fn main() {
 
-  let lock_key: i64 = 1;
+  const LOCK_KEY: i64 = 1;
   let pool = PgPool::connect("postgresql://postgres@localhost:5432/postgres").await.expect("Failed to create pool");
-  let lock = DistributedLock::new(&pool, lock_key);
+  let lock = DistributedLock::new(&pool, LOCK_KEY);
 
   lock.lock().await.unwrap();
-  println!("I have the lock wih key {lock_key} now!");
+  println!("I have the lock wih key {LOCK_KEY} now!");
   lock.unlock().await.unwrap();
 }
 ```
@@ -83,12 +83,12 @@ use sqlx::PgPool;
 
 fn main() {
 
-  let lock_key: i64 = 2;
+  const LOCK_KEY: i64 = 2;
   let pool = PgPool::connect("postgresql://postgres@localhost:5432/postgres").await.expect("Failed to create pool");
-  let lock = DistributedLock::new_with_attributes(&pool, lock_key, pglock_rust::LockType::TransactionLock, true);
+  let lock = DistributedLock::new_with_attributes(&pool, LOCK_KEY, pglock_rust::LockType::TransactionLock, true);
 
   lock.lock().await.unwrap();
-  println!("I have the lock wih key {lock_key} now!");
+  println!("I have the lock wih key {LOCK_KEY} now!");
   lock.unlock().await.unwrap();
 }
 ```

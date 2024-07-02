@@ -105,7 +105,7 @@ impl <'a> DistributedLockInfo<'a> {
             .bind(key)
             .fetch_one(self.pool).await?;
 
-            Ok(locked.0)
+        Ok(locked.0)
     }
 
     pub async fn get_all_locks(&self) -> Result<Vec<i64>, sqlx::Error> {
