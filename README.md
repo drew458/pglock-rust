@@ -40,9 +40,10 @@ You can start using the library like in this basic example. Note that `try_lock(
 ```rust
 use sqlx::PgPool;
 
+const LOCK_KEY: i64 = 1;
+
 fn main() {
 
-  const LOCK_KEY: i64 = 1;
   let pool = PgPool::connect("postgresql://postgres@localhost:5432/postgres").await.expect("Failed to create pool");
   let lock = DistributedLock::new(&pool, LOCK_KEY);
 
@@ -59,9 +60,10 @@ Otherwise, if you want the method to wait until the distributedLock is acquired,
 ```rust
 use sqlx::PgPool;
 
+const LOCK_KEY: i64 = 1;
+
 fn main() {
 
-  const LOCK_KEY: i64 = 1;
   let pool = PgPool::connect("postgresql://postgres@localhost:5432/postgres").await.expect("Failed to create pool");
   let lock = DistributedLock::new(&pool, LOCK_KEY);
 
@@ -111,9 +113,7 @@ A `DistributedLock` can be constructed in several ways:
 - Make sure your application is always configured to talk to leaders and not read-only followers in the case of PostgreSQL replicated setups.
 
 ## Contributing
-Contributions are welcome! Open an issue or a Pull Request to help improve the lib.
-Currently, I am looking towards implementing:
+Contributions are welcome! Currently, I am looking towards implementing:
 
 - Reader-writer locks: a lock with multiple levels of access. The lock can be held concurrently either by any number of "readers" or by a single "writer".
 - Semaphores: similar to a lock, but can be held by up to N users concurrently instead of just one.
-- Try-with-resources pattern to improve lock handling
